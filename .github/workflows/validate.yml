@@ -1,0 +1,62 @@
+name: Validate patches
+
+# Compiles the collection and regenerates the patch list. It does not publish anything: a bundle
+# only leaves this repository through the release workflow, and only from a verified build.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Files pushed through the GitHub API lose the executable bit.
+      - name: Make the wrapper runnable
+        run: chmod +x gradlew
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle
+        uses: burrunan/gradle-cache-action@v3
+
+      # The patch Gradle plugin is published only to the Morphe registry.
+      - name: Gradle registry credentials
+        run: |
+          mkdir -p ~/.gradle
+          echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
+          echo "gpr.key=${{ secrets.GHP_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
+
+      - name: Build and test
+        run: bash gradlew build --stacktrace
+
+      - name: Regenerate the patch list
+        run: bash gradlew generatePatchesList
+
+      - name: The committed patch list must match the build
+        run: |
+          if ! git diff --exit-code -- patches-list.json; then
+            echo "patches-list.json is stale: run ./gradlew generatePatchesList and commit the result"
+            exit 1
+          fi
+
+      - name: Validate compatibility declarations
+        run: |
+          # Every patch that declares a target version must carry a state in COMPATIBILITY.md, and
+          # no version may be claimed as supported without evidence recorded there.
+          python3 .github/scripts/validate_compatibility.py
