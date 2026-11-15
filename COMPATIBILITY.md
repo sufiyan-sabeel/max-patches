@@ -72,6 +72,18 @@ Because a failed dependency fails its dependents, these eight patches fail on 21
 Nine rows for eight dependents: `NavigationBarPatch.kt` is both a dependent and a user of the same
 hook. All are **unsupported on 21.45.82** until the fix is verified against a real APK.
 
+### Evidence added 2026-11-15
+
+A device test on Vivo V2521 (Android 16 / API 36) reproduced the failure with YouTube 21.45.82,
+MAX Manager 0.1.0, MAX Engine 2.3.1 and the bundle labelled 2.3.0-dev.7. Upstream `dev` at
+`197969bc` (2.3.0-dev.7) has **not** fixed it: `Fingerprints.kt` is byte-identical to the version this
+collection imported, so the fatal `resourceLiteral` remains.
+
+The state of the investigation, the exact throw site, the eight dependents with their lines, the APK
+inspection protocol and the decision tree are in
+[docs/YOUTUBE_21_45_82.md](docs/YOUTUBE_21_45_82.md). **No fingerprint has been changed and no
+drawable name guessed**; the fix waits on the target APK.
+
 ### Fix status: not started, deliberately
 
 The fix needs the target APK's resource table. Which drawable replaced `yt_fill_bell_black_24` in
