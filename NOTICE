@@ -1,0 +1,63 @@
+MAX Patches NOTICE
+==================
+
+MAX Patches is an independent patch collection derived from Morphe Patches
+(https://github.com/MorpheApp/morphe-patches). It is not affiliated with, endorsed by, or an
+official release of the Morphe project.
+
+Upstream attribution
+--------------------
+
+Patches in this repository are derived from Morphe Patches, Copyright 2026 Morphe, licensed under
+the GNU General Public License version 3.0. Morphe Patches is itself derived from ReVanced Patches,
+Copyright the ReVanced contributors, GPL-3.0.
+
+Every patch file keeps its upstream copyright header. The upstream NOTICE below is preserved in
+full, as GPLv3 Section 7b requires, and it must travel with any redistribution of this work, in
+source or binary form.
+
+Changes in MAX Patches
+----------------------
+
+- The collection is maintained and released independently, under the name MAX Patches.
+- Bundles are signed with a MAX key, not the Morphe key. The public half is published beside each
+  release and is what MAX Patcher verifies.
+- Compatibility is declared per app version with evidence, in COMPATIBILITY.md. Nothing is marked
+  supported because upstream said so.
+- The eight patches that depend on NavigationBarHookPatch are tracked separately, because they are
+  all affected by one defect on YouTube 21.45.82.
+
+"Morphe" is used here only descriptively, to say what this collection is compatible with.
+
+Upstream NOTICE, preserved
+--------------------------
+
+Morphe NOTICE
+
+https://github.com/MorpheApp/morphe-patches
+
+=============
+
+GPLv3 Section 7b: Preservation of User Notices
+
+All derivative works (source code and binaries) must include this
+NOTICE text and provide it to the software user.
+
+Portions of this software are provided "AS IS" by the Morphe software project.
+Any express or implied warranties, including the implied warranties of
+merchantability and fitness for a particular purpose, are disclaimed.
+
+
+GPLv3 Section 7c: Prohibiting Misrepresentation of Origin
+
+You are prohibited from misrepresenting the origin of the Program,
+and modified versions of the Program must be identified and marked in
+reasonable ways as different from the original version so as not to cause
+confusion regarding their origin.
+
+
+GPLv3 Section 7e: Declining Grant of Trademark Rights
+
+This License does not grant any rights or permission under trademark law
+to use the name "Morphe" or any of the Program's trade names, trademarks,
+service marks, or logos.
