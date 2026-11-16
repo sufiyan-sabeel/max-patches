@@ -160,6 +160,30 @@ internal object SetEnumMapFingerprint : Fingerprint(
     )
 )
 
+/**
+ * The notification tab's icon map, for YouTube 21.45 and later.
+ *
+ * Up to 21.44 the filled notification bell (`yt_fill_bell_black_24`) sits inline next to the
+ * `EnumMap.put`. 21.45.82 does not ship that drawable at all — verified against its resource table —
+ * and the bell entry in this same map is the outline icon (`yt_outline_bell_vd_theme_24`,
+ * `0x7f081061`, paired with the notification tab's enum). The map is located by the bell icon it
+ * contains, so anchoring on the icon the map actually has keeps the repair working without guessing
+ * a name and without disabling the dependency.
+ */
+internal object SetEnumMapCairoFingerprint : Fingerprint(
+    filters = listOf(
+        resourceLiteral(ResourceType.DRAWABLE, "yt_outline_bell_vd_theme_24"),
+        methodCall(
+            smali = "Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;",
+            location = MatchAfterWithin(10)
+        ),
+        methodCall(
+            smali = "Ljava/util/EnumMap;->put(Ljava/lang/Enum;Ljava/lang/Object;)Ljava/lang/Object;",
+            location = MatchAfterWithin(10)
+        )
+    )
+)
+
 internal object InitializeBottomBarContainerFingerprint : Fingerprint(
     name = "run",
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.FINAL),

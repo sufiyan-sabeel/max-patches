@@ -32,6 +32,7 @@ import app.morphe.patches.youtube.misc.extension.sharedExtensionPatch
 import app.morphe.patches.youtube.misc.playertype.playerTypeHookPatch
 import app.morphe.patches.youtube.misc.playservice.is_20_28_or_greater
 import app.morphe.patches.youtube.misc.playservice.is_21_43_or_greater
+import app.morphe.patches.youtube.misc.playservice.is_21_45_or_greater
 import app.morphe.patches.youtube.misc.playservice.versionCheckPatch
 import app.morphe.patches.youtube.shared.ActionBarSearchResultsFingerprint
 import app.morphe.util.ResourceGroup
@@ -383,7 +384,24 @@ val navigationBarHookPatch = patch(description = "Hooks the active navigation or
         val cairoNotificationEnumReference = ImageEnumConstructorFingerprint
             .instructionMatches.last().getInstruction<ReferenceInstruction>().reference
 
-        SetEnumMapFingerprint.let {
+        // Which drawable anchors the notification tab's icon map depends on the version: see
+        // SetEnumMapCairoFingerprint. Both fingerprints describe the same map; only the bell icon
+        // the map contains differs, and YouTube renamed it in 21.45.
+        val notificationIconMap = if (is_21_45_or_greater) {
+            SetEnumMapCairoFingerprint
+        } else {
+            SetEnumMapFingerprint
+        }
+
+        if (notificationIconMap.matchOrNull() == null) {
+            // A cosmetic repair, not a hook. Nothing above this block depends on it, so the patch
+            // completes and its hooks stay installed. Failing here would take down this patch and
+            // every patch that depends on it, for a missing notification icon.
+            println(
+                "NavigationBarHookPatch: notification icon map not found for this YouTube version; " +
+                    "skipping the filled-icon repair"
+            )
+        } else notificationIconMap.let {
             it.method.apply {
                 val setEnumIntegerIndex = it.instructionMatches.last().index
                 val enumMapRegister = getInstruction<FiveRegisterInstruction>(setEnumIntegerIndex).registerC

@@ -1,7 +1,8 @@
 # YouTube 21.45.82: the navigation-bar hook failure
 
-**Status: unresolved, and deliberately untouched.** No fingerprint has been changed, no drawable name
-has been guessed, and the eight dependent patches remain unsupported on 21.45.82.
+**Status: root cause established from the APK; fix implemented; still unsupported until a device run
+confirms it.** No drawable name was guessed — the name comes from the APK's own resource table. The
+eight dependent patches remain unsupported on 21.45.82 until the regression tests in §6 pass.
 
 This document records what is established from source, what is not established, and exactly what the
 APK will settle.
@@ -92,7 +93,69 @@ therefore closer to this repository's tree than to upstream dev.7 — while the 
 as 2.3.0-dev.7, which is upstream's version string, not this repository's (0.1.0). Before fixing
 anything, we should know which tree produced the failing run, because the fix goes in one of them.
 
-## 3. Not established, and not to be guessed
+
+---
+
+## 2a. APK evidence (16 November 2026)
+
+Analysed: `YouTube.apk`, 67,589,212 bytes,
+SHA-256 `10b51b7075ae0e92e7cba6d3ca393422a2756c214097800ccb89c5c3f01dfb28`,
+`versionName 21.45.82`, `versionCode 1561310996`, `compileSdk 37`, 8 DEX files, 2,134,488-byte
+`resources.arsc`.
+
+### The drawable
+
+`yt_fill_bell_black_24` is **absent** from the resource table. `get_res_id_by_key` returns nothing for
+it. The APK ships exactly five drawables whose name mentions "bell":
+
+| Name | Resource id |
+|---|---|
+| `yt_fill_experimental_bell_vd_theme_24` | `0x7f080e1d` |
+| `yt_fill_experimental_bell_waves_vd_theme_24` | `0x7f080e1f` |
+| `yt_outline_bell_vd_theme_24` | `0x7f081061` |
+| `yt_outline_experimental_bell_slash_vd_theme_24` | `0x7f08114c` |
+| `yt_outline_experimental_bell_vd_theme_24` | `0x7f08114d` |
+
+So the drawable was **renamed and restructured**, not merely moved: the "black" bell family is gone,
+replaced by `experimental_bell_vd_theme` (filled) and `outline_bell_vd_theme` (outline).
+
+### The DEX structure
+
+The map the repair needs is built in `Lkms;.<clinit>` (4,038 instructions) as
+`EnumMap<Lbgrj;>`, one entry per navigation tab, in exactly the shape `SetEnumMapFingerprint` expects:
+
+```
+sget-object v2, Lbgrj;->bD:Lbgrj;          // the tab's enum constant
+const       v3, 0x7f081061                  // its icon
+invoke-static {v3}, Integer;->valueOf(I)Ljava/lang/Integer;
+invoke-virtual {v0, v2, v3}, EnumMap;->put(Ljava/lang/Enum;Ljava/lang/Object;)Ljava/lang/Object;
+```
+
+Every bell id appears **once** in `classes.dex`. In this map the only bell entry is
+`yt_outline_bell_vd_theme_24` → enum `bD`. The filled bell `0x7f080e1d` appears in
+`Lkmt;.<clinit>`, which is a different structure (pair objects, not the nav-bar map).
+
+**Conclusion.** The map is still anchored by a bell drawable, and the fingerprint's structural filters
+still hold; only the drawable's *name* changed, from the filled "black" bell to the outline bell that
+the map now contains. That is a rename, not a structural break — and it is why the fix is a
+version-aware anchor rather than a rewrite.
+
+## 2b. The fix
+
+| File | Change |
+|---|---|
+| `youtube/misc/navigation/Fingerprints.kt` | adds `SetEnumMapCairoFingerprint`, identical shape, anchored on `yt_outline_bell_vd_theme_24`, with the evidence recorded in its doc comment |
+| `youtube/misc/navigation/NavigationBarHookPatch.kt` | selects the anchor by version (`is_21_45_or_greater`), and makes the cosmetic repair conditional: if neither anchor matches, the repair is skipped with a printed line and the patch completes |
+
+What the fix deliberately does **not** do: it does not rename the old fingerprint's drawable (older
+versions still need it), does not substitute an unrelated icon, does not disable the dependency, and
+does not catch an exception to fake success — `matchOrNull()` is a non-throwing query, so no exception
+is raised and none is swallowed.
+
+The hooks that the eight dependent patches need are untouched: they are installed earlier in the same
+`execute` block and are not conditional.
+
+## 3. Superseded by §2a
 
 - Whether `yt_fill_bell_black_24` was renamed, removed, or merely moved in 21.45.82.
 - Which drawable the notification tab uses in 21.45.82.
@@ -164,8 +227,6 @@ says so.
 
 ## 7. What is needed to proceed
 
-**A legitimately obtained YouTube 21.45.82 APK**, matching the arm64 build the device runs, plus
-confirmation of which tree produced the failing run (this repository's import, or upstream dev.7).
-
-With those two things the audit script answers every open question in §3 in one run, and the fix
-follows from the decision tree rather than from a guess.
+**A device run of a bundle built from this commit**, to move 21.45.82 out of "unsupported" for the
+eight dependents. The APK question is answered (§2a); what remains is confirming on hardware that the
+hook installs and the icon repair applies.
