@@ -1,0 +1,78 @@
+name: Build a bundle
+
+# Produces the patch bundle as a downloadable CI artifact. It does not publish anything: no release,
+# no tag, no upload to a release. A production release is a separate, deliberate act.
+#
+# Run it from the Actions tab after a green `Validate patches` run.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: bundle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Files pushed through the GitHub API lose the executable bit.
+      - name: Make the wrapper runnable
+        run: chmod +x gradlew
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Gradle
+        uses: burrunan/gradle-cache-action@v3
+
+      - name: Is the token configured?
+        run: |
+          if [ -z "${{ secrets.GHP_PACKAGES_TOKEN }}" ]; then
+            echo "GHP_PACKAGES_TOKEN is empty or not visible to this workflow."
+            exit 1
+          fi
+          echo "GHP_PACKAGES_TOKEN is set."
+
+      - name: Gradle registry credentials
+        run: |
+          mkdir -p ~/.gradle
+          echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
+          echo "gpr.key=${{ secrets.GHP_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
+
+      - name: Build the bundle
+        env:
+          # The patch plugin signs the bundle when this variable is present. It reads upstream's
+          # variable name, so MAX's secret is mapped onto it here rather than stored twice. A bundle
+          # built without the secret is unsigned, which is fine for testing and not for a release.
+          MORPHE_SIGNING_KEY: ${{ secrets.MAX_PATCHES_SIGNING_KEY }}
+        run: bash gradlew build --stacktrace
+
+      - name: Describe the bundle
+        run: |
+          ls -l patches/build/libs/
+          sha256sum patches/build/libs/*.mpp | tee bundle-SHA256SUMS.txt
+          {
+            echo "### Bundle"
+            echo '```'
+            python3 .github/scripts/describe_bundle.py
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: max-patches-bundle
+          path: |
+            patches/build/libs/*.mpp
+            bundle-SHA256SUMS.txt
+            patches-list.json
+          if-no-files-found: error
