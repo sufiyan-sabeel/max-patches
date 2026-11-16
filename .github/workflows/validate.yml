@@ -42,6 +42,21 @@ jobs:
           echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
           echo "gpr.key=${{ secrets.GHP_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
 
+      - name: Check registry access
+        # Turns "plugin not found" into a status code. Gradle reports a rejected token the same way
+        # it reports a missing artifact, so without this the two are indistinguishable.
+        # The token is passed to curl, never echoed.
+        run: |
+          BASE=https://maven.pkg.github.com/MorpheApp/registry
+          for url in \
+            "$BASE/app/morphe/patches/app.morphe.patches.gradle.plugin/2.1.1/app.morphe.patches.gradle.plugin-2.1.1.pom" \
+            "$BASE/app/morphe/patches/app.morphe.patches.gradle.plugin/2.1.0/app.morphe.patches.gradle.plugin-2.1.0.pom" \
+            "$BASE/app/morphe/patches/app.morphe.patches.gradle.plugin/maven-metadata.xml"
+          do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -u "${GITHUB_ACTOR}:${{ secrets.GHP_PACKAGES_TOKEN }}" "$url")
+            echo "HTTP $code  ${url#https://maven.pkg.github.com/MorpheApp/registry}"
+          done
+
       - name: Build and test
         run: bash gradlew build --stacktrace
 
