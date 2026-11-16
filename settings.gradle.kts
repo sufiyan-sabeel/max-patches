@@ -20,9 +20,10 @@ pluginManagement {
 
 plugins {
     // The patch Gradle plugin is published only to the Morphe registry, so this build needs a
-    // token with read:packages. Vendoring or replacing the plugin is tracked as MAX Patches work;
-    // see docs/DEPENDENCIES.md in max-patcher.
-    id("app.morphe.patches") version "2.1.0"
+    // token with read:packages. The version follows the tree the collection was imported from;
+    // 2.1.0 is not published there and resolves to nothing, which reads as "plugin not found".
+    // Vendoring or replacing the plugin is tracked in docs/REGISTRY_TOKEN.md.
+    id("app.morphe.patches") version "2.1.1"
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 

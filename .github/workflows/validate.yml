@@ -48,6 +48,15 @@ jobs:
       - name: Regenerate the patch list
         run: bash gradlew generatePatchesList
 
+      - name: Upload the generated patch list
+        # Uploaded before the staleness check: on a first run the file does not exist yet, and the
+        # generated list is the thing to commit. The check below still fails the job.
+        uses: actions/upload-artifact@v4
+        with:
+          name: patches-list
+          path: patches-list.json
+          if-no-files-found: warn
+
       - name: The committed patch list must match the build
         run: |
           if ! git diff --exit-code -- patches-list.json; then
