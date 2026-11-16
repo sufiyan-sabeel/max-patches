@@ -42,6 +42,17 @@ jobs:
           echo "gpr.user=${{ github.actor }}" >> ~/.gradle/gradle.properties
           echo "gpr.key=${{ secrets.GHP_PACKAGES_TOKEN }}" >> ~/.gradle/gradle.properties
 
+      - name: Is the token configured?
+        # Distinguishes "the secret is missing" from "the secret is rejected". Prints only whether
+        # it is set, never its value or length.
+        run: |
+          if [ -z "${{ secrets.GHP_PACKAGES_TOKEN }}" ]; then
+            echo "GHP_PACKAGES_TOKEN is empty or not visible to this workflow."
+            echo "Check: repository Settings -> Secrets and variables -> Actions -> GHP_PACKAGES_TOKEN"
+            exit 1
+          fi
+          echo "GHP_PACKAGES_TOKEN is set."
+
       - name: Check registry access
         # Turns "plugin not found" into a status code. Gradle reports a rejected token the same way
         # it reports a missing artifact, so without this the two are indistinguishable.
