@@ -387,20 +387,13 @@ val navigationBarHookPatch = patch(description = "Hooks the active navigation or
         // Which drawable anchors the notification tab's icon map depends on the version: see
         // SetEnumMapCairoFingerprint. Both fingerprints describe the same map; only the bell icon
         // the map contains differs, and YouTube renamed it in 21.45.
-        val notificationIconMap = if (is_21_45_or_greater) {
-            SetEnumMapCairoFingerprint
-        } else {
-            SetEnumMapFingerprint
-        }
+        val notificationIconMap = notificationIconMapFingerprint(is_21_45_or_greater)
 
         if (notificationIconMap.matchOrNull() == null) {
             // A cosmetic repair, not a hook. Nothing above this block depends on it, so the patch
             // completes and its hooks stay installed. Failing here would take down this patch and
             // every patch that depends on it, for a missing notification icon.
-            println(
-                "NavigationBarHookPatch: notification icon map not found for this YouTube version; " +
-                    "skipping the filled-icon repair"
-            )
+            println("NavigationBarHookPatch: notification icon map not found; repair skipped")
         } else notificationIconMap.let {
             it.method.apply {
                 val setEnumIntegerIndex = it.instructionMatches.last().index
@@ -425,3 +418,15 @@ private enum class NavigationHook(val methodName: String, val parameters: String
     NAVIGATION_TAB_LOADED("navigationTabLoaded", "Landroid/view/View;"),
     NAVIGATION_IMAGE_RESOURCE_TAB_LOADED("navigationImageResourceTabLoaded", "Landroid/view/View;"),
 }
+
+/**
+ * The fingerprint that locates the notification tab's icon map for this version.
+ *
+ * Kept as a function rather than an inline `if` so the choice is testable without an APK: the
+ * selection is the part that can silently regress, while each fingerprint's own filters are checked
+ * against a real APK by the tests that need one.
+ *
+ * @param is2145OrGreater Whether the target is YouTube 21.45 or later.
+ */
+internal fun notificationIconMapFingerprint(is2145OrGreater: Boolean): Fingerprint =
+    if (is2145OrGreater) SetEnumMapCairoFingerprint else SetEnumMapFingerprint

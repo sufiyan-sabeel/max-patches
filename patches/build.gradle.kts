@@ -4,12 +4,16 @@ group = "app.morphe"
 
 patches {
     about {
-        name = "Morphe Patches"
-        description = "Patches for Morphe"
-        source = "git@github.com:MorpheApp/morphe-patches.git"
-        author = "MorpheApp"
-        contact = "na"
-        website = "https://morphe.software"
+        // A MAX release identifies itself as one. The upstream project it was forked from is recorded
+        // in UPSTREAM_BASELINE and in NOTICE, never in the name, author or website: a bundle that
+        // calls itself Morphe Patches would be a different product claiming another project's
+        // releases, and the manager's source list would show two identical names.
+        name = "MAX Patches"
+        description = "Patches for MAX Patcher"
+        source = "https://github.com/sufiyan-sabeel/max-patches"
+        author = "Umaiz Sufiyan"
+        contact = "https://github.com/sufiyan-sabeel/max-patcher-docs/issues"
+        website = "https://github.com/sufiyan-sabeel/max-patcher"
         license = "GNU General Public License v3.0, with additional GPL section 7 requirements"
     }
 }
